@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { saveSession } from '../../src/utils/storage';
 
 export default function HomeScreen() {
   // 1. Durum Tanımları (State)
@@ -34,14 +35,26 @@ export default function HomeScreen() {
 
   // 3. Sayaç Mantığı (Her saniye çalışır)
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    let interval: any = null;
     if (isActive && seconds > 0) {
       interval = setInterval(() => {
         setSeconds((sec) => sec - 1);
       }, 1000);
     } else if (seconds === 0) {
       setIsActive(false);
-      Alert.alert("Tebrikler!", "Odaklanma seansı tamamlandı.");
+      
+      // --- EKLENEN KISIM BAŞLANGIÇ ---
+      if (category) { // Sadece kategori seçiliyse kaydet
+        saveSession({
+          date: new Date().toISOString().split('T')[0], // Bugünün tarihi (YYYY-AA-GG)
+          duration: 25 * 60, // Toplam odaklanma süresi (Şimdilik sabit 25dk)
+          category: category,
+          distractions: distractions
+        });
+      }
+      // --- EKLENEN KISIM BİTİŞ ---
+
+      Alert.alert("Tebrikler!", "Odaklanma seansı tamamlandı ve kaydedildi.");
     }
     return () => {
       if (interval) clearInterval(interval);
