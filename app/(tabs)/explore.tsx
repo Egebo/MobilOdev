@@ -1,229 +1,216 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
-import { Alert, Dimensions, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BarChart, PieChart } from 'react-native-chart-kit';
 
-// Ekran genişliği (Grafiklerin sığması için)
+// Ekran genişliği
 const screenWidth = Dimensions.get('window').width;
 
+// Renk Paleti (Ana Sayfa ile Uyumlu)
+const COLORS = {
+  background: '#121212',
+  surface: '#1E1E1E',
+  primary: '#5E5CE6', // Mor
+  accent: '#32D74B',  // Yeşil
+  danger: '#FF453A',  // Kırmızı
+  text: '#FFFFFF',
+  textSec: '#A0A0A0',
+  grid: '#333333'     // Grafik çizgileri için
+};
+
 export default function ReportScreen() {
-  const [stats, setStats] = useState({
-    todayTime: 0,
-    totalTime: 0,
-    totalDistractions: 0,
-  });
-  
-  // Grafikler için veri state'leri
+  const [stats, setStats] = useState({ todayTime: 0, totalTime: 0, totalDistractions: 0 });
   const [weeklyData, setWeeklyData] = useState<any>(null);
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Verileri Çekme ve Hesaplama
   const loadData = async () => {
     setLoading(true);
     try {
       const jsonValue = await AsyncStorage.getItem('@focus_sessions');
       const sessions = jsonValue != null ? JSON.parse(jsonValue) : [];
 
-      // --- İSTATİSTİK HESAPLAMA ---
-      let today = 0;
-      let total = 0;
-      let distractions = 0;
+      let today = 0, total = 0, distractions = 0;
       const todayStr = new Date().toISOString().split('T')[0];
-      
       const catMap: {[key: string]: number} = {};
       const last7DaysMap: {[key: string]: number} = {};
 
-      // Son 7 günün tarihlerini hazırla (Boş günler 0 görünsün diye)
+      // Son 7 günü sıfırla
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const dateKey = d.toISOString().split('T')[0];
-        last7DaysMap[dateKey] = 0; 
+        last7DaysMap[d.toISOString().split('T')[0]] = 0; 
       }
 
       sessions.forEach((s: any) => {
-        // 1. Genel Toplamlar
         total += s.duration;
         distractions += s.distractions || 0;
+        if (s.date === todayStr) today += s.duration;
 
-        // 2. Bugünün Toplamı
-        if (s.date === todayStr) {
-          today += s.duration;
-        }
+        // Kategori Sayımı
+        catMap[s.category] = (catMap[s.category] || 0) + 1;
 
-        // 3. Kategori Dağılımı (Pie Chart için)
-        if (catMap[s.category]) {
-          catMap[s.category] += 1; // Seans sayısı olarak sayıyoruz
-        } else {
-          catMap[s.category] = 1;
-        }
-
-        // 4. Günlük Dağılım (Bar Chart için)
+        // Günlük Dağılım
         if (last7DaysMap[s.date] !== undefined) {
-           // Dakikaya çevirip ekle
            last7DaysMap[s.date] += Math.floor(s.duration / 60);
         }
       });
 
       setStats({
-        todayTime: Math.floor(today / 60), // Dakika
-        totalTime: Math.floor(total / 60), // Dakika
+        todayTime: Math.floor(today / 60),
+        totalTime: Math.floor(total / 60),
         totalDistractions: distractions
       });
 
-      // --- GRAFİK VERİLERİNİ HAZIRLA ---
-      
-      // Bar Chart Verisi (Son 7 Gün)
-      const labels = Object.keys(last7DaysMap).map(date => date.slice(8,10)); // Sadece gün kısmı (Örn: 09)
-      const dataPoints = Object.values(last7DaysMap);
-      
+      // Grafik Verileri
       setWeeklyData({
-        labels: labels,
-        datasets: [{ data: dataPoints }]
+        labels: Object.keys(last7DaysMap).map(date => date.slice(8,10)), // Gün (09, 10 vb.)
+        datasets: [{ data: Object.values(last7DaysMap) }]
       });
 
-      // Pie Chart Verisi (Kategoriler)
-      const pieColors = ['#f39c12', '#e74c3c', '#3498db', '#9b59b6', '#2ecc71'];
+      // Pasta Grafik Renkleri (Canlı)
+      const pieColors = ['#FF9F0A', '#FF453A', '#0A84FF', '#BF5AF2', '#32D74B'];
       const pData = Object.keys(catMap).map((key, index) => ({
         name: key,
         population: catMap[key],
         color: pieColors[index % pieColors.length],
-        legendFontColor: "#7F7F7F",
+        legendFontColor: COLORS.textSec,
         legendFontSize: 12
       }));
       setCategoryData(pData);
 
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
     setLoading(false);
   };
 
-  // SAHTE VERİ YÜKLEME (Test İçin)
-const addFakeData = async () => {
-  const today = new Date().toISOString().split('T')[0];
+  const addFakeData = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+    const yStr = yesterday.toISOString().split('T')[0];
 
-  // Dün için tarih oluştur
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const fakeSessions = [
+      { id: '1', date: today, duration: 45 * 60, category: 'Kodlama', distractions: 0 },
+      { id: '2', date: today, duration: 25 * 60, category: 'Ders', distractions: 2 },
+      { id: '3', date: yStr, duration: 60 * 60, category: 'Kitap', distractions: 0 },
+      { id: '4', date: yStr, duration: 30 * 60, category: 'Kodlama', distractions: 1 },
+      { id: '5', date: yStr, duration: 15 * 60, category: 'Spor', distractions: 0 },
+    ];
+    await AsyncStorage.setItem('@focus_sessions', JSON.stringify(fakeSessions));
+    Alert.alert("Başarılı", "Test verileri eklendi.");
+    loadData();
+  };
 
-  const fakeSessions = [
-    { id: '1', date: today, duration: 25 * 60, category: 'Kodlama', distractions: 0 },
-    { id: '2', date: today, duration: 45 * 60, category: 'Ders', distractions: 2 },
-    { id: '3', date: yesterdayStr, duration: 60 * 60, category: 'Kitap', distractions: 0 },
-    { id: '4', date: yesterdayStr, duration: 30 * 60, category: 'Kodlama', distractions: 1 },
-  ];
-
-  await AsyncStorage.setItem('@focus_sessions', JSON.stringify(fakeSessions));
-  Alert.alert("Başarılı", "Test verileri yüklendi. Sayfa yenileniyor...");
-  loadData(); // Ekranı güncelle
-};
-
-// VERİLERİ SİLME (Temizlik İçin)
-const clearData = async () => {
+  const clearData = async () => {
     await AsyncStorage.removeItem('@focus_sessions');
     loadData();
-    Alert.alert("Temizlendi", "Tüm veriler silindi.");
-};
+    Alert.alert("Temizlendi", "Veriler silindi.");
+  };
 
-  // Ekran her odaklandığında verileri yenile (Tab değişince güncellemesi için şart)
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { loadData(); }, []));
 
   return (
     <ScrollView 
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={loadData} />}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      refreshControl={<RefreshControl refreshing={loading} onRefresh={loadData} tintColor={COLORS.primary} />}
     >
-      <Text style={styles.header}>Performans Raporu</Text>
+      <StatusBar barStyle="light-content" />
+      <Text style={styles.header}>Performans Özeti</Text>
 
-      {/* 1. Üst Kartlar (İstatistikler) */}
+      {/* 1. İstatistik Kartları */}
       <View style={styles.statsContainer}>
         <View style={styles.card}>
-            <Text style={styles.cardTitle}>Bugün</Text>
-            <Text style={styles.cardValue}>{stats.todayTime} dk</Text>
+            <Text style={styles.cardTitle}>BUGÜN</Text>
+            <Text style={[styles.cardValue, {color: COLORS.accent}]}>{stats.todayTime} dk</Text>
         </View>
         <View style={styles.card}>
-            <Text style={styles.cardTitle}>Toplam</Text>
-            <Text style={styles.cardValue}>{stats.totalTime} dk</Text>
+            <Text style={styles.cardTitle}>TOPLAM</Text>
+            <Text style={[styles.cardValue, {color: COLORS.primary}]}>{stats.totalTime} dk</Text>
         </View>
         <View style={styles.card}>
-            <Text style={[styles.cardTitle, {color:'#e74c3c'}]}>Dikkat D.</Text>
-            <Text style={[styles.cardValue, {color:'#e74c3c'}]}>{stats.totalDistractions}</Text>
+            <Text style={styles.cardTitle}>DİKKAT D.</Text>
+            <Text style={[styles.cardValue, {color: COLORS.danger}]}>{stats.totalDistractions}</Text>
         </View>
       </View>
 
-      {/* 2. Bar Chart (Son 7 Gün) */}
-      <Text style={styles.chartTitle}>Son 7 Gün Odaklanma (Dk)</Text>
+      {/* 2. Bar Chart */}
+      <Text style={styles.chartTitle}>Son 7 Günlük Odaklanma</Text>
       {weeklyData && (
         <BarChart
             data={weeklyData}
             width={screenWidth - 40}
             height={220}
             yAxisLabel=""
-            yAxisSuffix="dk"
+            yAxisSuffix=" dk"
             chartConfig={{
-            backgroundColor: "#fff",
-            backgroundGradientFrom: "#fff",
-            backgroundGradientTo: "#fff",
-            decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(74, 144, 226, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              backgroundGradientFrom: COLORS.surface,
+              backgroundGradientTo: COLORS.surface,
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(94, 92, 230, ${opacity})`, // Mor Çubuklar
+              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+              propsForBackgroundLines: { stroke: COLORS.grid }
             }}
             style={styles.chart}
+            showBarTops={false}
+            fromZero
         />
       )}
 
-      {/* 3. Pie Chart (Kategori Dağılımı) */}
-      <Text style={styles.chartTitle}>Kategori Dağılımı (Seans Sayısı)</Text>
-      <PieChart
-        data={categoryData}
-        width={screenWidth - 20}
-        height={220}
-        chartConfig={{
-            color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-        }}
-        accessor={"population"}
-        backgroundColor={"transparent"}
-        paddingLeft={"15"}
-        absolute
-      />
-      
-              {/* Test Butonları (Geliştirme Aşamasında Görünsün) */}
-        <View style={styles.debugContainer}>
-          <TouchableOpacity style={styles.debugBtn} onPress={addFakeData}>
-              <Text style={styles.debugText}>+ Test Verisi Ekle</Text>
-          </TouchableOpacity>
+      {/* 3. Pie Chart */}
+      <Text style={styles.chartTitle}>Kategori Dağılımı (Seans)</Text>
+      <View style={styles.pieContainer}>
+        <PieChart
+            data={categoryData}
+            width={screenWidth - 40}
+            height={220}
+            chartConfig={{
+                color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+            }}
+            accessor={"population"}
+            backgroundColor={"transparent"}
+            paddingLeft={"0"}
+            center={[10, 0]}
+            absolute
+        />
+      </View>
 
-          <TouchableOpacity style={[styles.debugBtn, {backgroundColor:'#e74c3c'}]} onPress={clearData}>
-              <Text style={styles.debugText}>Verileri Temizle</Text>
-          </TouchableOpacity>
+      {/* 4. Test Butonları (Geliştirici) */}
+      <View style={styles.debugContainer}>
+        <Text style={styles.debugLabel}>Geliştirici Araçları</Text>
+        <View style={styles.debugRow}>
+            <TouchableOpacity style={styles.debugBtn} onPress={addFakeData}>
+                <Text style={styles.debugText}>+ Test Verisi</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={[styles.debugBtn, {backgroundColor: 'rgba(255, 69, 58, 0.2)', borderWidth:1, borderColor: COLORS.danger}]} onPress={clearData}>
+                <Text style={[styles.debugText, {color: COLORS.danger}]}>Temizle</Text>
+            </TouchableOpacity>
         </View>
-
-      <View style={{height: 50}} />   
-
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa', padding: 20 },
-  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#333', marginTop: 30 },
+  container: { flex: 1, backgroundColor: COLORS.background, padding: 20 },
+  header: { fontSize: 28, fontWeight: 'bold', marginBottom: 25, color: COLORS.text, marginTop: 30 },
   
+  // İstatistikler
   statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30 },
-  card: { backgroundColor: 'white', width: '30%', padding: 15, borderRadius: 10, alignItems: 'center', elevation: 3, shadowColor:'#000', shadowOpacity:0.1, shadowRadius:5 },
-  cardTitle: { fontSize: 12, color: '#666', marginBottom: 5, fontWeight:'600' },
-  cardValue: { fontSize: 20, fontWeight: 'bold', color: '#2c3e50' },
+  card: { backgroundColor: COLORS.surface, width: '31%', paddingVertical: 15, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  cardTitle: { fontSize: 10, color: COLORS.textSec, marginBottom: 5, fontWeight:'bold', letterSpacing: 1 },
+  cardValue: { fontSize: 22, fontWeight: 'bold' },
 
-  chartTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, marginTop: 10, color: '#333' },
+  // Grafikler
+  chartTitle: { fontSize: 18, fontWeight: '600', marginBottom: 15, marginTop: 10, color: COLORS.text },
   chart: { borderRadius: 16, marginVertical: 8 },
-  debugContainer: { flexDirection: 'row', gap: 10, justifyContent: 'center', marginTop: 20 },
-  debugBtn: { padding: 10, backgroundColor: '#333', borderRadius: 8 },
-  debugText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
+  pieContainer: { backgroundColor: COLORS.surface, borderRadius: 16, padding: 10, alignItems: 'center' },
+
+  // Test Alanı
+  debugContainer: { marginTop: 40, padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#333', borderStyle: 'dashed' },
+  debugLabel: { color: '#666', fontSize: 12, marginBottom: 10, textAlign: 'center' },
+  debugRow: { flexDirection: 'row', gap: 10, justifyContent: 'center' },
+  debugBtn: { paddingVertical: 10, paddingHorizontal: 15, backgroundColor: '#333', borderRadius: 8 },
+  debugText: { color: 'white', fontWeight: '600', fontSize: 12 },
 });

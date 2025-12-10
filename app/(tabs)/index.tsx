@@ -1,9 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, AppState, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { saveSession } from '../../src/utils/storage';
 
 const PRESET_TIMES = [15, 25, 45, 60];
+
+// Renk Paleti (Dark Mode)
+const COLORS = {
+  background: '#121212',     // Çok koyu arka plan
+  surface: '#1E1E1E',        // Kart rengi
+  primary: '#5E5CE6',        // Ana mor/mavi renk
+  accent: '#32D74B',         // Yeşil (Başlat)
+  danger: '#FF453A',         // Kırmızı (Durdur/Sıfırla)
+  text: '#FFFFFF',           // Beyaz yazı
+  textSec: '#A0A0A0',        // Gri yazı
+  buttonBg: '#2C2C2E',       // Buton arka planı
+};
 
 export default function HomeScreen() {
   const [initialTime, setInitialTime] = useState(25 * 60);
@@ -51,7 +63,6 @@ export default function HomeScreen() {
     return () => { if (interval) clearInterval(interval); };
   }, [isActive, seconds]);
 
-  // Formatlama
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const sec = time % 60;
@@ -64,7 +75,6 @@ export default function HomeScreen() {
     setDistractions(0);
   };
 
-  // --- Süre Değiştirme (Preset) ---
   const handlePresetSelect = (minutes: number) => {
     if (isActive) return Alert.alert("Uyarı", "Sayaç çalışırken süre değiştirilemez.");
     const newTime = minutes * 60;
@@ -72,27 +82,30 @@ export default function HomeScreen() {
     setSeconds(newTime);
   };
 
-  // --- Süre Değiştirme (+/- Manuel) ---
   const adjustTime = (deltaMinutes: number) => {
     if (isActive) return Alert.alert("Uyarı", "Sayaç çalışırken süre değiştirilemez.");
-    
     setSeconds((prevSeconds) => {
       const newSeconds = prevSeconds + (deltaMinutes * 60);
-      // En az 1 dakika (60 sn) sınırı
-      if (newSeconds < 60) return 60;
-      setInitialTime(newSeconds); // Resetlenince bu süreye dönsün
+      if (newSeconds < 60) return 60; // En az 1 dk
+      setInitialTime(newSeconds);
       return newSeconds;
     });
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Odaklanma Takibi</Text>
+      <StatusBar barStyle="light-content" />
       
-      {/* Kategori Seçimi */}
+      {/* Başlık Alanı */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>Odaklanma Takibi</Text>
+        <Text style={styles.subHeader}>Hedefini Seç ve Başla</Text>
+      </View>
+      
+      {/* 1. Kategori Seçimi */}
       <View style={styles.sectionContainer}>
-        <View style={styles.row}>
-            {['Ders', 'Kodlama', 'Kitap', 'Proje'].map((cat) => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+            {['Ders', 'Kodlama', 'Kitap', 'Proje', 'Spor'].map((cat) => (
                 <TouchableOpacity 
                     key={cat} 
                     style={[styles.chipButton, category === cat && styles.chipActive]}
@@ -101,17 +114,34 @@ export default function HomeScreen() {
                     <Text style={[styles.chipText, category === cat && styles.textActive]}>{cat}</Text>
                 </TouchableOpacity>
             ))}
-        </View>
-        {!category && <Text style={styles.warningText}>* Başlamak için kategori seçin</Text>}
+        </ScrollView>
+        {!category && <Text style={styles.warningText}>* Başlamak için bir kategori seçmelisin</Text>}
       </View>
 
-      {/* Sayaç ve Kontrolleri */}
+      {/* 2. Sık Kullanılan Süreler (Sayacın Üstüne Taşındı) */}
+      <View style={styles.presetContainer}>
+        {PRESET_TIMES.map((min) => (
+            <TouchableOpacity 
+                key={min}
+                onPress={() => handlePresetSelect(min)}
+                style={[styles.presetBtn, initialTime === min * 60 && styles.presetBtnActive]}
+            >
+                <Text style={[styles.presetText, initialTime === min * 60 && styles.textActive]}>{min}</Text>
+                <Text style={[styles.presetLabel, initialTime === min * 60 && styles.textActive]}>dk</Text>
+            </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* 3. Sayaç ve Kontrolleri */}
       <View style={styles.timerWrapper}>
         
-        {/* Dakika Ayar Butonları (Üst Sıra) */}
+        {/* Devasa Sayaç */}
+        <Text style={styles.timerText}>{formatTime(seconds)}</Text>
+        
+        {/* İnce Ayar Butonları (Sayacın Altında, Sağlı Sollu) */}
         <View style={styles.adjustmentRow}>
-           {/* Azaltma Butonları */}
-           <View style={styles.adjustGroup}>
+           {/* SOL: Azaltma */}
+           <View style={styles.adjustGroupLeft}>
               <TouchableOpacity style={styles.adjustBtn} onPress={() => adjustTime(-5)}>
                 <Text style={styles.adjustText}>-5</Text>
               </TouchableOpacity>
@@ -120,11 +150,11 @@ export default function HomeScreen() {
               </TouchableOpacity>
            </View>
 
-           {/* Sayaç Göstergesi */}
-           <Text style={styles.timerText}>{formatTime(seconds)}</Text>
+           {/* Orta Boşluk (Görsel Denge İçin) */}
+           <View style={{width: 20}} />
 
-           {/* Arttırma Butonları */}
-           <View style={styles.adjustGroup}>
+           {/* SAĞ: Arttırma */}
+           <View style={styles.adjustGroupRight}>
               <TouchableOpacity style={styles.adjustBtn} onPress={() => adjustTime(1)}>
                 <Text style={styles.adjustText}>+1</Text>
               </TouchableOpacity>
@@ -134,35 +164,28 @@ export default function HomeScreen() {
            </View>
         </View>
 
-        {/* Hızlı Seçim Butonları (Alt Sıra) */}
-        <View style={styles.presetRow}>
-            {PRESET_TIMES.map((min) => (
-                <TouchableOpacity 
-                    key={min}
-                    onPress={() => handlePresetSelect(min)}
-                    style={styles.presetBtn}
-                >
-                    <Text style={styles.presetText}>{min}dk</Text>
-                </TouchableOpacity>
-            ))}
-        </View>
-        
-        <Text style={styles.distractionText}>Dikkat Dağılması: {distractions}</Text>
+        <Text style={styles.distractionText}>
+            {distractions > 0 ? `⚠️ ${distractions} Dikkat Dağılması` : "Harika Gidiyorsun!"}
+        </Text>
       </View>
 
-      {/* Ana Kontroller (Başlat/Sıfırla) */}
+      {/* 4. Ana Kontroller (Play/Pause) */}
       <View style={styles.controls}>
-        <TouchableOpacity style={styles.mainButton} onPress={() => {
-            if (!category) return Alert.alert("Uyarı", "Lütfen önce bir kategori seçin.");
-            setIsActive(!isActive);
-        }}>
-            <Ionicons name={isActive ? "pause" : "play"} size={32} color="white" />
-            <Text style={styles.buttonText}>{isActive ? "Duraklat" : "Başlat"}</Text>
+        <TouchableOpacity 
+            style={[styles.mainButton, { backgroundColor: isActive ? COLORS.buttonBg : COLORS.accent }]} 
+            onPress={() => {
+                if (!category) return Alert.alert("Uyarı", "Lütfen önce bir kategori seçin.");
+                setIsActive(!isActive);
+            }}
+        >
+            <Ionicons name={isActive ? "pause" : "play"} size={32} color={isActive ? COLORS.accent : "white"} />
+            <Text style={[styles.buttonText, isActive && { color: COLORS.accent }]}>
+                {isActive ? "Duraklat" : "Başlat"}
+            </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.mainButton, styles.resetButton]} onPress={resetSession}>
-            <Ionicons name="refresh" size={32} color="white" />
-            <Text style={styles.buttonText}>Sıfırla</Text>
+            <Ionicons name="refresh" size={28} color="white" />
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -170,36 +193,46 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: '#f5f5f5', alignItems: 'center', padding: 20, paddingTop: 60 },
-  header: { fontSize: 28, fontWeight: 'bold', marginBottom: 20, color: '#333' },
+  container: { flexGrow: 1, backgroundColor: COLORS.background, alignItems: 'center', padding: 20, paddingTop: 60 },
   
-  sectionContainer: { marginBottom: 20, width: '100%', alignItems: 'center' },
-  row: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', justifyContent: 'center' },
-  warningText: { color: '#e74c3c', fontSize: 12, marginTop: 5 },
+  headerContainer: { width: '100%', marginBottom: 20 },
+  header: { fontSize: 32, fontWeight: 'bold', color: COLORS.text, textAlign: 'left' },
+  subHeader: { fontSize: 16, color: COLORS.textSec, marginTop: 5 },
   
-  chipButton: { paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#e0e0e0', borderRadius: 20 },
-  chipActive: { backgroundColor: '#4a90e2' },
-  chipText: { color: '#333' },
+  // Kategori
+  sectionContainer: { marginBottom: 25, height: 50, width: '100%' },
+  categoryScroll: { gap: 10, paddingRight: 20 },
+  warningText: { color: COLORS.danger, fontSize: 12, marginTop: 5 },
+  
+  chipButton: { paddingVertical: 8, paddingHorizontal: 20, backgroundColor: COLORS.surface, borderRadius: 25, borderWidth: 1, borderColor: '#333' },
+  chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  chipText: { color: COLORS.textSec, fontWeight: '600' },
   textActive: { color: 'white', fontWeight: 'bold' },
 
-  timerWrapper: { alignItems: 'center', marginBottom: 30, width: '100%' },
+  // Preset (Hızlı Seçim) - Sayacın Üstünde
+  presetContainer: { flexDirection: 'row', justifyContent: 'center', gap: 15, marginBottom: 10, width: '100%' },
+  presetBtn: { width: 60, height: 60, borderRadius: 16, backgroundColor: COLORS.surface, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#333' },
+  presetBtnActive: { backgroundColor: COLORS.buttonBg, borderColor: COLORS.primary, borderWidth: 2 },
+  presetText: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
+  presetLabel: { fontSize: 10, color: COLORS.textSec },
+
+  // Sayaç Alanı
+  timerWrapper: { alignItems: 'center', marginBottom: 30, width: '100%', paddingVertical: 10 },
+  timerText: { fontSize: 80, fontWeight: 'bold', color: COLORS.text, fontVariant: ['tabular-nums'], letterSpacing: 2 },
   
-  // Sayaç ve Yan Butonlar Düzeni
-  adjustmentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 15, marginBottom: 15 },
-  adjustGroup: { flexDirection: 'row', gap: 8 },
-  adjustBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', justifyContent: 'center', alignItems: 'center', elevation: 2 },
-  adjustText: { fontWeight: 'bold', color: '#555' },
+  // Ayar Butonları (+/-)
+  adjustmentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10 },
+  adjustGroupLeft: { flexDirection: 'row', gap: 10 },
+  adjustGroupRight: { flexDirection: 'row', gap: 10 },
   
-  timerText: { fontSize: 60, fontWeight: 'bold', color: '#2c3e50', fontVariant: ['tabular-nums'], minWidth: 180, textAlign: 'center' },
+  adjustBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: COLORS.surface, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#333' },
+  adjustText: { fontWeight: 'bold', color: COLORS.text, fontSize: 16 },
 
-  presetRow: { flexDirection: 'row', gap: 10 },
-  presetBtn: { padding: 8, backgroundColor: '#ececec', borderRadius: 8 },
-  presetText: { fontSize: 12, color: '#666' },
+  distractionText: { fontSize: 14, color: COLORS.textSec, marginTop: 20, opacity: 0.8 },
 
-  distractionText: { fontSize: 16, color: '#e74c3c', marginTop: 15, fontWeight: '600' },
-
-  controls: { flexDirection: 'row', gap: 20 },
-  mainButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2ecc71', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 30, elevation: 4 },
-  resetButton: { backgroundColor: '#e74c3c' },
+  // Alt Kontroller
+  controls: { flexDirection: 'row', gap: 15, width: '100%', paddingHorizontal: 20 },
+  mainButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, borderRadius: 20, elevation: 4 },
+  resetButton: { flex: 0, width: 70, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.danger },
   buttonText: { color: 'white', fontSize: 18, fontWeight: 'bold', marginLeft: 10 },
 });
