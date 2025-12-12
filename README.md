@@ -40,8 +40,7 @@ Uygulama, kullanıcıların Pomodoro tekniği veya özel sürelerle odaklanma se
 | **Navigasyon** | Expo Router (File-based routing) |
 
 ---
-
-## 📂 Proje Yapısı
+## 📂 Proje Dosya Yapısı
 
 Kodlar temiz, modüler ve yeniden kullanılabilir bileşen mantığına göre düzenlenmiştir:
 
@@ -54,35 +53,45 @@ MobilOdev/
 │   │   └── _layout.tsx    # Tab Bar Navigasyon Ayarları
 ├── src/
 │   ├── utils/
-│   │   └── storage.ts     # Veritabanı İşlemleri (Save/Load/Clear)
-│   └── components/        # (UI Bileşenleri)
+│       └── storage.ts     # Veritabanı İşlemleri (Save/Load/Clear)
+│   
 └── assets/                # Görseller ve Fontlar
-
+```
 ---
 
 ## 🚀 Kurulum ve Çalıştırma
 
-Projeyi yerel makinenizde çalıştırmak için aşağıdaki adımları izleyin:
+Projeyi bilgisayarınıza indirmek ve gerekli kütüphaneleri yüklemek için terminalde sırasıyla şu komutları uygulayın:
 
-**1. Projeyi Klonlayın**
+### 1. Projeyi Klonlayın
+Önce projeyi bilgisayarınıza çekin:
+
 ```bash
 git clone [https://github.com/Egebo/MobilOdev.git](https://github.com/Egebo/MobilOdev.git)
+```
+### 2. Proje Klasörüne Girin
+
+```bash
 cd MobilOdev
-2. Gerekli Paketleri Yükleyin
+```
 
-Bash
+### 3. Paketleri Yükleyin
 
+```bash
 npm install
-3. Uygulamayı Başlatın
+```
 
-Bash
+## ▶️ Başlatma
 
+```bash
 npx expo start
+```
 
-4. Test Edin
+## 📱 Test Etme
+Uygulamayı telefonunuzda veya emülatörde görmek için:
 
-Terminalde çıkan QR Kodu telefonunuzdaki Expo Go uygulamasıyla okutun (Android) veya Kamera ile tarayın (iOS).
+Android Telefon: "Expo Go" uygulamasını açın ve terminaldeki QR kodu taratın.
 
-Bilgisayar ve telefonun aynı Wi-Fi ağında olduğundan emin olun.
+iPhone (iOS): Kamera uygulamasını açın ve QR kodu taratın.
 
-Alternatif: Android Emulator veya iOS Simulator kullanıyorsanız terminalde a veya i tuşuna basarak başlatabilirsiniz.
+Emülatör: Terminalde a (Android) veya i (iOS) tuşuna basarak sanal cihazda başlatın.
