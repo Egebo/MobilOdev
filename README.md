@@ -1,50 +1,48 @@
-# Welcome to your Expo app 👋
+# FocusTracker - Odaklanma Takibi ve Raporlama Uygulaması
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Bu proje, **Sakarya Üniversitesi Bilgisayar Mühendisliği Bölümü**, **BSM 447 - Mobil Uygulama Geliştirme** dersi dönem projesi kapsamında geliştirilmiştir.
 
-## Get started
+Uygulama, kullanıcıların Pomodoro tekniği veya özel sürelerle odaklanma seansları yapmasını sağlar, arka plan takibi (AppState) ile dikkat dağınıklığını ölçer ve detaylı grafiklerle raporlar sunar.
 
-1. Install dependencies
+## 📱 Proje Özellikleri (MVP ve Ekstralar)
 
-   ```bash
-   npm install
-   ```
+### Temel Gereksinimler
+* **⏱ Özelleştirilebilir Sayaç:** 15, 25, 45, 60 dakikalık hızlı seçimler ve manuel süre arttırma/azaltma özellikleri.
+* **🚨 Dikkat Dağınıklığı Takibi:** `AppState API` kullanılarak, kullanıcı uygulamadan ayrıldığında (arka plana attığında) sayaç otomatik durur ve dikkat dağınıklığı olarak kaydedilir.
+* **📊 Gelişmiş Raporlama:** `react-native-chart-kit` ile son 7 günün odaklanma süreleri (Bar Chart) ve kategori dağılımları (Pie Chart) görselleştirilir.
+* **💾 Veri Kalıcılığı:** Tamamlanan seanslar `AsyncStorage` kullanılarak cihaz hafızasında tutulur.
+* **🏷 Kategori Yönetimi:** Ders, Kodlama, Kitap, Proje ve Spor kategorileri ile seans takibi.
 
-2. Start the app
+### UX/UI İyileştirmeleri (Bonus)
+* **🌑 Dark Mode (Karanlık Tema):** Göz yormayan, pil dostu modern tasarım.
+* **📳 Haptik Geri Bildirim (Titreşim):** Buton etkileşimlerinde, sayaç bitiminde ve uyarı anlarında titreşimli geri bildirim (Vibration API).
+* **🔒 Akıllı Kontroller:** Kategori seçilmeden sayacın başlamasını engelleyen güvenlik kontrolleri.
 
-   ```bash
-   npx expo start
-   ```
+## 🛠 Kullanılan Teknolojiler
 
-In the output, you'll find options to open the app in a
+* **Framework:** React Native (Expo Router)
+* **Dil:** TypeScript
+* **Veri Depolama:** @react-native-async-storage/async-storage
+* **Grafikler:** react-native-chart-kit & react-native-svg
+* **İkonlar:** @expo/vector-icons (Ionicons)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🚀 Kurulum ve Çalıştırma
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Projeyi yerel makinenizde çalıştırmak için aşağıdaki adımları izleyin:
 
-## Get a fresh project
-
-When you're ready, run:
-
+**1. Projeyi Klonlayın**
 ```bash
-npm run reset-project
-```
+git clone [https://github.com/KULLANICI_ADINIZ/MobilOdev.git](https://github.com/KULLANICI_ADINIZ/MobilOdev.git)
+cd MobilOdev
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+**2. Gerekli Paketleri Yükleyin**
+npm install
 
-## Learn more
+**3. Uygulamayı Başlatın**
+npx expo start
 
-To learn more about developing your project with Expo, look at the following resources:
+**4. Test Edin**
+Terminalde çıkan QR Kodu telefonunuzdaki Expo Go uygulamasıyla okutun (Android) veya Kamera ile tarayın (iOS).
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Alternatif olarak, emülatörde çalıştırmak için terminalde a (Android) veya i (iOS) tuşuna basın.
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

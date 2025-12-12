@@ -18,6 +18,7 @@ const COLORS = {
 };
 
 export default function HomeScreen() {
+  // --- Durum Yönetimi (State) ---
   const [initialTime, setInitialTime] = useState(25 * 60);
   const [seconds, setSeconds] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
@@ -26,13 +27,12 @@ export default function HomeScreen() {
 
   const appState = useRef(AppState.currentState);
 
-  // --- Dikkat Dağınıklığı Takibi ---
+  // --- 1. Dikkat Dağınıklığı Takibi (AppState) ---
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (appState.current.match(/active/) && nextAppState.match(/inactive|background/)) {
         if (isActive) {
-          // TİTREŞİM: Uyarı için kısa kısa 2 kez titret (Android: bekle, titret, bekle, titret)
-          // iOS'te sadece süre verilir, desen çalışmaz ama yine de titrer.
+          // Uyarı Titreşimi: İki kısa titreme
           Vibration.vibrate([100, 200, 100, 200]); 
           
           setIsActive(false);
@@ -45,7 +45,7 @@ export default function HomeScreen() {
     return () => subscription.remove();
   }, [isActive]);
 
-  // --- Sayaç Mantığı ---
+  // --- 2. Sayaç Mantığı ---
   useEffect(() => {
     let interval: any = null;
     if (isActive && seconds > 0) {
@@ -55,7 +55,7 @@ export default function HomeScreen() {
     } else if (seconds === 0 && isActive) {
       setIsActive(false);
       
-      // TİTREŞİM: Süre bitince uzun titret (1 saniye)
+      // Bitiş Titreşimi: 1 saniye uzun titreme
       Vibration.vibrate(1000);
 
       if (category) {
@@ -71,6 +71,7 @@ export default function HomeScreen() {
     return () => { if (interval) clearInterval(interval); };
   }, [isActive, seconds]);
 
+  // --- Yardımcı Fonksiyonlar ---
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const sec = time % 60;
@@ -78,8 +79,7 @@ export default function HomeScreen() {
   };
 
   const resetSession = () => {
-    // TİTREŞİM: Sıfırlama hissiyatı için çok kısa (50ms)
-    Vibration.vibrate(50);
+    Vibration.vibrate(50); // Haptik geri bildirim
     setIsActive(false);
     setSeconds(initialTime);
     setDistractions(0);
@@ -87,7 +87,7 @@ export default function HomeScreen() {
 
   const handlePresetSelect = (minutes: number) => {
     if (isActive) return Alert.alert("Uyarı", "Sayaç çalışırken süre değiştirilemez.");
-    Vibration.vibrate(20); // Tuş sesi yerine mini titreşim
+    Vibration.vibrate(20);
     const newTime = minutes * 60;
     setInitialTime(newTime);
     setSeconds(newTime);
@@ -95,19 +95,21 @@ export default function HomeScreen() {
 
   const adjustTime = (deltaMinutes: number) => {
     if (isActive) return Alert.alert("Uyarı", "Sayaç çalışırken süre değiştirilemez.");
-    Vibration.vibrate(20); // Tuş sesi yerine mini titreşim
+    Vibration.vibrate(20);
     setSeconds((prevSeconds) => {
       const newSeconds = prevSeconds + (deltaMinutes * 60);
-      if (newSeconds < 60) return 60;
+      if (newSeconds < 60) return 60; // Minimum 1 dakika sınırı
       setInitialTime(newSeconds);
       return newSeconds;
     });
   };
 
+  // --- ARAYÜZ (UI) ---
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <StatusBar barStyle="light-content" />
       
+      {/* Başlık */}
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Odaklanma Takibi</Text>
         <Text style={styles.subHeader}>Hedefini Seç ve Başla</Text>
@@ -121,7 +123,7 @@ export default function HomeScreen() {
                     key={cat} 
                     style={[styles.chipButton, category === cat && styles.chipActive]}
                     onPress={() => {
-                        Vibration.vibrate(20); // Seçim hissi
+                        Vibration.vibrate(20);
                         setCategory(cat);
                     }}
                 >
@@ -132,7 +134,7 @@ export default function HomeScreen() {
         {!category && <Text style={styles.warningText}>* Başlamak için bir kategori seçmelisin</Text>}
       </View>
 
-      {/* Sık Kullanılanlar */}
+      {/* Sık Kullanılan Süreler (Preset) */}
       <View style={styles.presetContainer}>
         {PRESET_TIMES.map((min) => (
             <TouchableOpacity 
@@ -146,10 +148,11 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* Sayaç */}
+      {/* Sayaç Alanı */}
       <View style={styles.timerWrapper}>
         <Text style={styles.timerText}>{formatTime(seconds)}</Text>
         
+        {/* İnce Ayar Butonları */}
         <View style={styles.adjustmentRow}>
            <View style={styles.adjustGroupLeft}>
               <TouchableOpacity style={styles.adjustBtn} onPress={() => adjustTime(-5)}>
@@ -177,13 +180,20 @@ export default function HomeScreen() {
         </Text>
       </View>
 
-      {/* Kontroller */}
+      {/* Ana Kontroller */}
       <View style={styles.controls}>
         <TouchableOpacity 
-            style={[styles.mainButton, { backgroundColor: isActive ? COLORS.buttonBg : COLORS.accent }]} 
+            disabled={!category} // Kategori yoksa tıklanamaz
+            style={[
+                styles.mainButton, 
+                { 
+                    // Dinamik Stil: Aktifse gri, pasifse yeşil. Kategori yoksa soluk.
+                    backgroundColor: isActive ? COLORS.buttonBg : COLORS.accent,
+                    opacity: !category ? 0.3 : 1
+                }
+            ]} 
             onPress={() => {
-                if (!category) return Alert.alert("Uyarı", "Lütfen önce bir kategori seçin.");
-                Vibration.vibrate(50); // Başlat/Durdur hissi
+                Vibration.vibrate(50);
                 setIsActive(!isActive);
             }}
         >
@@ -206,26 +216,33 @@ const styles = StyleSheet.create({
   headerContainer: { width: '100%', marginBottom: 20 },
   header: { fontSize: 32, fontWeight: 'bold', color: COLORS.text, textAlign: 'left' },
   subHeader: { fontSize: 16, color: COLORS.textSec, marginTop: 5 },
+  
   sectionContainer: { marginBottom: 25, height: 50, width: '100%' },
   categoryScroll: { gap: 10, paddingRight: 20 },
   warningText: { color: COLORS.danger, fontSize: 12, marginTop: 5 },
+  
   chipButton: { paddingVertical: 8, paddingHorizontal: 20, backgroundColor: COLORS.surface, borderRadius: 25, borderWidth: 1, borderColor: '#333' },
   chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   chipText: { color: COLORS.textSec, fontWeight: '600' },
   textActive: { color: 'white', fontWeight: 'bold' },
+
   presetContainer: { flexDirection: 'row', justifyContent: 'center', gap: 15, marginBottom: 10, width: '100%' },
   presetBtn: { width: 60, height: 60, borderRadius: 16, backgroundColor: COLORS.surface, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#333' },
   presetBtnActive: { backgroundColor: COLORS.buttonBg, borderColor: COLORS.primary, borderWidth: 2 },
   presetText: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   presetLabel: { fontSize: 10, color: COLORS.textSec },
+
   timerWrapper: { alignItems: 'center', marginBottom: 30, width: '100%', paddingVertical: 10 },
   timerText: { fontSize: 80, fontWeight: 'bold', color: COLORS.text, fontVariant: ['tabular-nums'], letterSpacing: 2 },
+  
   adjustmentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10 },
   adjustGroupLeft: { flexDirection: 'row', gap: 10 },
   adjustGroupRight: { flexDirection: 'row', gap: 10 },
   adjustBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: COLORS.surface, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#333' },
   adjustText: { fontWeight: 'bold', color: COLORS.text, fontSize: 16 },
+
   distractionText: { fontSize: 14, color: COLORS.textSec, marginTop: 20, opacity: 0.8 },
+
   controls: { flexDirection: 'row', gap: 15, width: '100%', paddingHorizontal: 20 },
   mainButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, borderRadius: 20, elevation: 4 },
   resetButton: { flex: 0, width: 70, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.danger },
