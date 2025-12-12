@@ -67,7 +67,7 @@ Projeyi bilgisayarınıza indirmek ve gerekli kütüphaneleri yüklemek için te
 Önce projeyi bilgisayarınıza çekin:
 
 ```bash
-git clone [https://github.com/Egebo/MobilOdev.git](https://github.com/Egebo/MobilOdev.git)
+git clone https://github.com/Egebo/MobilOdev.git
 ```
 ### 2. Proje Klasörüne Girin
 
