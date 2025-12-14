@@ -1,6 +1,6 @@
 # 🎯 FocusTracker - Odaklanma Takibi ve Raporlama Uygulaması
 
-Bu proje, **Sakarya Üniversitesi Bilgisayar Mühendisliği Bölümü**, **BSM 447 - Mobil Uygulama Geliştirme** dersi dönem projesi kapsamında geliştirilmiştir.
+Bu proje, **Sakarya Üniversitesi Bilgisayar Mühendisliği Bölümü**, **BSM 447 - Mobil Uygulama Geliştirme** dersi projesi olarak geliştirilmiştir.
 
 Uygulama, kullanıcıların Pomodoro tekniği veya özel sürelerle odaklanma seansları yapmasını sağlar, arka plan takibi (**AppState**) ile dikkat dağınıklığını ölçer ve elde edilen verileri detaylı grafiklerle raporlar.
 
