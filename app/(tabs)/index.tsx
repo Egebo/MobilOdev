@@ -5,7 +5,7 @@ import { saveSession } from '../../src/utils/storage';
 
 const PRESET_TIMES = [15, 25, 45, 60];
 
-// Renk Paleti (Dark Mode)
+// Dark Mode
 const COLORS = {
   background: '#121212',
   surface: '#1E1E1E',
@@ -55,7 +55,6 @@ export default function HomeScreen() {
     } else if (seconds === 0 && isActive) {
       setIsActive(false);
       
-      // Bitiş Titreşimi: 1 saniye uzun titreme
       Vibration.vibrate(1000);
 
       if (category) {
@@ -65,8 +64,25 @@ export default function HomeScreen() {
           category: category,
           distractions: distractions
         });
+
+        const minutes = Math.floor(initialTime / 60); 
+
+        Alert.alert(
+            "Seans Özeti", 
+            `Tebrikler! Hedefine ulaştın.\n\n` +
+            `Kategori: ${category}\n` +
+            `Süre: ${minutes} dakika\n` + 
+            `Dikkat Dağınıklığı: ${distractions}`,
+            [
+                { 
+                    text: "Harika!", 
+                    onPress: () => resetSession() 
+                }
+            ]
+        );
+      } else {
+         Alert.alert("Tebrikler!", "Süre doldu.");
       }
-      Alert.alert("Tebrikler!", "Odaklanma seansı tamamlandı.");
     }
     return () => { if (interval) clearInterval(interval); };
   }, [isActive, seconds]);
@@ -79,7 +95,7 @@ export default function HomeScreen() {
   };
 
   const resetSession = () => {
-    Vibration.vibrate(50); // Haptik geri bildirim
+    Vibration.vibrate(50);
     setIsActive(false);
     setSeconds(initialTime);
     setDistractions(0);
@@ -96,12 +112,13 @@ export default function HomeScreen() {
   const adjustTime = (deltaMinutes: number) => {
     if (isActive) return Alert.alert("Uyarı", "Sayaç çalışırken süre değiştirilemez.");
     Vibration.vibrate(20);
-    setSeconds((prevSeconds) => {
-      const newSeconds = prevSeconds + (deltaMinutes * 60);
-      if (newSeconds < 60) return 60; // Minimum 1 dakika sınırı
-      setInitialTime(newSeconds);
-      return newSeconds;
-    });
+    
+    let newSeconds = seconds + (deltaMinutes * 60);
+    
+    if (newSeconds < 60) newSeconds = 60; 
+
+    setSeconds(newSeconds);
+    setInitialTime(newSeconds);
   };
 
   // --- ARAYÜZ (UI) ---
@@ -118,7 +135,7 @@ export default function HomeScreen() {
       {/* Kategori Seçimi */}
       <View style={styles.sectionContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
-            {['Ders', 'Kodlama', 'Kitap', 'Proje', 'Spor'].map((cat) => (
+            {['Ders', 'Kodlama', 'Kitap', 'Proje'].map((cat) => (
                 <TouchableOpacity 
                     key={cat} 
                     style={[styles.chipButton, category === cat && styles.chipActive]}
@@ -134,7 +151,7 @@ export default function HomeScreen() {
         {!category && <Text style={styles.warningText}>* Başlamak için bir kategori seçmelisin</Text>}
       </View>
 
-      {/* Sık Kullanılan Süreler (Preset) */}
+      {/* Sık Kullanılan Süreler (Presets) */}
       <View style={styles.presetContainer}>
         {PRESET_TIMES.map((min) => (
             <TouchableOpacity 
@@ -183,11 +200,10 @@ export default function HomeScreen() {
       {/* Ana Kontroller */}
       <View style={styles.controls}>
         <TouchableOpacity 
-            disabled={!category} // Kategori yoksa tıklanamaz
+            disabled={!category}
             style={[
                 styles.mainButton, 
                 { 
-                    // Dinamik Stil: Aktifse gri, pasifse yeşil. Kategori yoksa soluk.
                     backgroundColor: isActive ? COLORS.buttonBg : COLORS.accent,
                     opacity: !category ? 0.3 : 1
                 }
